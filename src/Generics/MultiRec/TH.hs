@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs           #-}
 {-# LANGUAGE KindSignatures  #-}
 {-# LANGUAGE PatternGuards   #-}
+{-# LANGUAGE ViewPatterns    #-}
 {-# LANGUAGE CPP             #-}
 
 -----------------------------------------------------------------------------
@@ -295,11 +296,8 @@ pfCon ns ps (NormalC n fs) =
 -- we can argue that applications should be treated as compositions only
 -- if the entire construct cannot be treated as a constant.
 pfField :: [Name] -> [(Name, Name)] -> Type -> Q Type
-pfField ns ps t@(ConT n)
-  | remakeName n `elem` ns             = conT ''I `appT` return t
-pfField ns ps t
-  | ConT n : a <- unApp t, remakeName n `elem` ns
-                                       = conT ''I `appT` (foldl appT (conT n) (map rename a))
+pfField ns ps t@(unApp -> ConT n : a)
+  | remakeName n `elem` ns             = conT ''I `appT` (foldl appT (conT n) (map rename a))
   where
     rename (VarT n)
       | Just p <- lookup n ps          = varT p
